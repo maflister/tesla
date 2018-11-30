@@ -1,0 +1,27 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+  global pt_vers 
+  puts stderr "\tAdds [module-info name] to your environment.\n"
+}
+
+module-whatis "adds PyTorch to your environment variables"
+
+set               pt_vers           0.4.0
+set 		  cuda_vers	    9.0
+set		  cudnn_vers	    7.0
+set               img_root          /rcc/shared/apps/singularity/images
+set-alias	  pytorch    	    "singularity exec --nv -B /rcc/shared/apps/cuda/${cuda_vers}/cudnn${cudnn_vers}:/cuda,/rcc/shared/apps/nvidia/384.111:/nvidia ${img_root}/ubuntu-16.04_cuda-${cuda_vers}_cudnn-${cudnn_vers}_pytorch-${pt_vers}_latest.simg $*"
+set-alias	  pytorch-shell     "singularity shell --nv -B /rcc/shared/apps/cuda/${cuda_vers}/cudnn${cudnn_vers}:/cuda,/rcc/shared/apps/nvidia/384.111:/nvidia ${img_root}/ubuntu-16.04_cuda-${cuda_vers}_cudnn-${cudnn_vers}_pytorch-${pt_vers}_latest.simg"
+setenv		   SINGULARITYENV_TMPDIR \$TMPDIR
+
+if ![ is-loaded 'singularity' ] {
+  module load singularity
+}
+
+if ![ is-loaded 'cuda/cudnn${cudnn_vers}/${cuda_vers}' ] {
+  module load cuda/cudnn${cudnn_vers}/${cuda_vers}
+}
+

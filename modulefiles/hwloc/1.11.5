@@ -1,0 +1,19 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds hwloc to your environment variables,"
+}
+
+module-whatis "adds hwloc to your environment variables."
+
+set              version           1.11.5
+set              root              /rcc/shared/apps/hwloc/$version
+
+prepend-path      PATH              $root/bin
+prepend-path      PATH              $root/sbin
+prepend-path      MANPATH           $root/share/man
+prepend-path      LD_LIBRARY_PATH   $root/lib/
+

@@ -1,0 +1,15 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds LAPACK to your environment variables,"
+}
+
+module-whatis "adds LAPACK to your environment variables."
+
+set              version           3.8.0
+set              root              /rcc/shared/apps/lapack/$version
+
+prepend-path      LD_LIBRARY_PATH   $root/lib

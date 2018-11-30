@@ -1,0 +1,22 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds R 3.5.0 to your environment variables,"
+}
+
+module-whatis "Adds R 3.5.0 to your environment variables."
+
+set              version           3.5.0
+set              root              /rcc/shared/apps/R/$version
+
+prepend-path      PATH              $root/bin
+prepend-path      MANPATH           $root/share/man
+prepend-path      LD_LIBRARY_PATH   $root/lib
+prepend-path      LD_LIBRARY_PATH   $root/lib64
+
+if ![ is-loaded 'gcc/4.9.3' ] {
+  module load gcc/4.9.3
+}

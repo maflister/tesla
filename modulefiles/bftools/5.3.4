@@ -1,0 +1,14 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds bftools to your environment variables,"
+}
+
+module-whatis "adds bftools to your environment variables"
+
+set               version           5.3.4
+set               root              /rcc/shared/apps/bftools/$version
+prepend-path      PATH              $root

@@ -1,0 +1,26 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds GROMACS 2018 to your environment variables,"
+}
+
+module-whatis "adds GROMACS 2018 to your environment variables."
+
+set              version           2018
+set              root              /rcc/shared/apps/gromacs/$version
+
+prepend-path      PATH              $root/bin
+prepend-path      MANPATH           $root/share/man
+prepend-path      LD_LIBRARY_PATH   $root/lib64
+prepend-path      PKG_CONFIG_PATH   $root/lib64/pkgconfig
+
+if ![ is-loaded 'cuda/cudnn5.1/8.0' ] {
+  module load cuda/cudnn5.1/8.0
+}
+
+if ![ is-loaded 'gcc/4.9.3' ] {
+  module load gcc/4.9.3
+}

@@ -1,0 +1,23 @@
+#%Module -*- tcl -*-
+##
+## dot modulefile
+##
+proc ModulesHelp { } {
+  global openmpiversion
+
+  puts stderr "\tAdds OpenMPI to your environment variables,"
+}
+
+module-whatis "adds OpenMPI to your environment variables"
+
+set               openmpiversion    3.0.0
+set               root              /rcc/shared/apps/openmpi/$openmpiversion
+
+prepend-path      PATH              $root/bin
+prepend-path      MANPATH           $root/share/man/
+setenv            MPI_HOME          $root
+setenv            MPI_RUN           $root/bin/mpirun
+
+prepend-path      LD_RUN_PATH       $root/lib
+prepend-path      LD_LIBRARY_PATH   $root/lib:/rcc/shared/apps/torque/current/lib
+prepend-path      CPATH             $root/include

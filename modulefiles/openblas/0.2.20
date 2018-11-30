@@ -1,0 +1,15 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds OpenBLAS to your environment variables,"
+}
+
+module-whatis "adds OpenBLAS to your environment variables."
+
+set              version           0.2.20
+set              root              /rcc/shared/apps/openblas/$version
+
+prepend-path      LD_LIBRARY_PATH   $root/lib

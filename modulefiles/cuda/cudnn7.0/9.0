@@ -1,0 +1,19 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds CUDA to your environment variables,"
+}
+
+module-whatis "adds CUDA to your environment variables."
+
+set              cuda_version           9.0
+set              cudnn_version          7.0
+set              root              /rcc/shared/apps/cuda/$cuda_version/cudnn$cudnn_version
+
+prepend-path      PATH              $root/bin
+prepend-path      MANPATH           $root/share/man
+prepend-path      LD_LIBRARY_PATH   $root/lib
+prepend-path      LD_LIBRARY_PATH   $root/lib64

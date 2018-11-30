@@ -1,0 +1,19 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds OpenCV to your environment variables,"
+}
+
+module-whatis "adds OpenCV to your environment variables."
+
+set              version           3.4.1
+set              root              /rcc/shared/apps/opencv/$version
+
+prepend-path	 PATH		   $root/bin
+prepend-path     LD_LIBRARY_PATH   $root/lib64
+prepend-path	 MANPATH	   $root/share
+prepend-path	 PKG_CONFIG_PATH   $root/lib64/pkgconfig
+

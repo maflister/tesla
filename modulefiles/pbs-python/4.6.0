@@ -1,0 +1,16 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+
+  puts stderr "\tAdds pbs-python to your environment variables,"
+}
+
+module-whatis "adds pbs-python to your environment variables."
+
+set              root              /rcc/shared/apps/pbs-python
+
+prepend-path      MANPATH           $root/share/man
+append-path      PYTHONPATH         $root/lib64/python2.6/site-packages/pbs
+

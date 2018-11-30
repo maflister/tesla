@@ -1,0 +1,43 @@
+#%Module -*- tcl -*-
+##
+## modulefile
+##
+proc ModulesHelp { } {
+  global mxnet_vers
+  puts stderr "\tAdds [module-info name] to your environment.\n"
+}
+
+module-whatis "adds MXNet to your environment variables"
+
+set             version           1.1.0
+set             root	          /rcc/shared/apps/mxnet/$version
+setenv		MXNET_HOME	  $root/lib
+prepend-path	LD_LIBRARY_PATH   $root/lib
+
+set 		cuda_vers	  9.0	
+set 		cudnn_vers	  7.0	
+prepend-path	LD_LIBRARY_PATH	  /rcc/shared/apps/cuda/${cuda_vers}/cudnn${cudnn_vers}/lib64/stubs
+if ![ is-loaded 'cuda/cudnn${cudnn_vers}/${cuda_vers}' ] {
+  module load cuda/cudnn${cudnn_vers}/${cuda_vers}
+}
+
+if ![ is-loaded 'gcc/4.9.3' ] {
+  module load gcc/4.9.3
+}
+
+if ![ is-loaded 'openblas/0.2.20' ] {
+  module load openblas/0.2.20
+}
+
+if ![ is-loaded 'lapack/3.8.0' ] {
+  module load lapack/3.8.0
+}
+
+if ![ is-loaded 'blas/3.8.0' ] {
+  module load blas/3.8.0
+}
+
+if ![ is-loaded 'opencv/3.4.1' ] {
+  module load opencv/3.4.1
+}
+
