@@ -11,7 +11,7 @@
 # logging?
 
 
-import sys, re, os
+import sys, re, os, pwd
 
 # max nodes for queues
 gpunodes = 1
@@ -29,6 +29,9 @@ gpumem = 120
 
 # max walltimes for queues
 gpuwtime = 336
+
+# username
+username = pwd.getpwuid(os.geteuid())[0]
 
 sendmailCommand = "/usr/sbin/sendmail -t"
 
@@ -271,168 +274,153 @@ else:
             queue = m.group(0)
 
 ##### MAIN START #####
-# for each must-have attribute check if exists and exit if not
-try:
-    jobname
-except:
-    msg = 'PBS job name is missing. Please consider adding a job name to identify your work.\nExample: #PBS -N JobName.'
-    warnings.append(msg)
-    jobname = 'missing'
-try:
-    account
-except:
-    account = 'missing'
-try:
-    nodes
-except:
-    msg = 'PBS nodes request is required. Example: #PBS -l nodes=1:ppn=1.'
-    errors.append(msg)
-    nodes = 'missing'
-try:
-    ppn
-except:
-    msg = 'PBS processor per node request is required. Example: #PBS -l nodes=1:ppn=1.'
-    errors.append(msg)
-    ppn = 'missing'
-try:
-    mem
-except:
-    msg = 'PBS memory request is required. Example: #PBS -l mem=5gb.'
-    errors.append(msg)
-    mem = 'missing'
-try:
-    walltime
-except:
-    msg = 'PBS walltime request is required. Example: #PBS -l walltime=1:00:00.'
-    errors.append(msg)
-    walltime = 'missing'
-try:
-    gpus
-except:
-    msg = 'PBS GPU request is missing. GPU cluster jobs should utilize at least 1 GPU.\nExceptions include small pre/post processing jobs.\nExample: #PBS -l nodes=1:ppn=1:gpus=1.'
-    warnings.append(msg)
-    gpus = 'missing'
-try:
-    features
-except:
-    features = 'missing'
-
-# rewrite memory to gb
-if mem == 'missing':
+if username == "akrruser":
     pass
 else:
-    m = re.search('(\d*)(\w*)', mem)
-    memval = float(m.group(1))
-    memsuff = m.group(2)
-    if memsuff.lower() == "b":
-        memval = memval/(1000**3)
-    if memsuff.lower() in ("kb", "k"):
-        memval = memval/(1000**2)
-    if memsuff.lower() in ("mb", "m"):
-        memval = memval/(1000)
-    if memsuff.lower() in ("gb", "g"):
-        memval = memval
-    if memsuff.lower() in ("tb", "t"):
-        memval = memval*(1000)
+    # for each must-have attribute check if exists and exit if not try: jobname except: msg = 'PBS job name is missing. Please consider adding a job name to identify your work.\nExample: #PBS -N JobName.' warnings.append(msg) jobname = 'missing' try: account except: account = 'missing' try: nodes except: msg = 'PBS nodes request is required. Example: #PBS -l nodes=1:ppn=1.' errors.append(msg) nodes = 'missing' try: ppn
+    except:
+        msg = 'PBS processor per node request is required. Example: #PBS -l nodes=1:ppn=1.'
+        errors.append(msg)
+        ppn = 'missing'
+    try:
+        mem
+    except:
+        msg = 'PBS memory request is required. Example: #PBS -l mem=5gb.'
+        errors.append(msg)
+        mem = 'missing'
+    try:
+        walltime
+    except:
+        msg = 'PBS walltime request is required. Example: #PBS -l walltime=1:00:00.'
+        errors.append(msg)
+        walltime = 'missing'
+    try:
+        gpus
+    except:
+        msg = 'PBS GPU request is missing. GPU cluster jobs should utilize at least 1 GPU.\nExceptions include small pre/post processing jobs.\nExample: #PBS -l nodes=1:ppn=1:gpus=1.'
+        warnings.append(msg)
+        gpus = 'missing'
+    try:
+        features
+    except:
+        features = 'missing'
 
-# rewrite walltime to hours
-if walltime == 'missing':
-    pass
-else:
-    time = walltime.split(':')
-    units = len(time)
-    if units == 1:
-        wtime = float(time[0])/(60**2)
-    if units == 2:
-        wtime = float(time[0])/(60)+float(time[1])/(60**2)
-    if units == 3:
-        wtime = float(time[0])+float(time[1])/60+float(time[2])/(60**2)
-    if units == 4:
-        wtime = float(time[0])*24+float(time[1])+float(time[2])/60+float(time[3])/(60**2)
-
-# this section is based on queue
-try:
-    queue
-except NameError:
-    queue = ""
-# gpus queue
-if queue == 'k40_gpu' or queue == 'k80_gpu':
-    msg = 'The k40_gpu and k80_gpu queues have been retired. Please use the PBS option feature.\nExample1: #PBS -l feature=k40. Example2: #PBS -l feature=k80.'
-    errors.append(msg)
-# no queue 
-else:
-    if nodes == 'missing':
-        pass
-    else:
-        #maxmem = nodes*stdmem
-        try:
-            nodes = int(nodes)
-            if nodes > gpunodes:
-                msg = 'Cannot request more than %s node(s) per job.' % (gpunodes)
-                errors.append(msg)
-        #else:
-        except:
-            nodename = []
-            s = "".join(nodes)
-            nodename.append(s)
-            if len(nodename) > gpunodes:
-                msg = 'Cannot request more than %s node(s) per job.' % (gpunodes)
-                errors.append(msg)
-    if ppn == 'missing':
-        pass
-    else:
-        if features == 'k40':
-            if ppn > k40cores:
-                msg = 'PPN request must be less than or equal to %s for K40 GPU nodes.' % (k40cores)
-                errors.append(msg)
-        if features == 'k80' or features == 'missing':
-            if ppn > k80cores:
-                msg = 'PPN request must be less than or equal to %s for K80 GPU nodes.' % (k80cores)
-                errors.append(msg)
-
-    if walltime == 'missing':
-        pass
-    else:
-        if wtime > gpuwtime:
-            msg = 'Max walltime request is %shrs.' % (gpuwtime)
-            errors.append(msg)
-
+    # rewrite memory to gb
     if mem == 'missing':
         pass
     else:
-        if memval > gpumem:
-            msg = 'Max memory request is %sGB.' % (gpumem)
-            errors.append(msg)
+        m = re.search('(\d*)(\w*)', mem)
+        memval = float(m.group(1))
+        memsuff = m.group(2)
+        if memsuff.lower() == "b":
+            memval = memval/(1000**3)
+        if memsuff.lower() in ("kb", "k"):
+            memval = memval/(1000**2)
+        if memsuff.lower() in ("mb", "m"):
+            memval = memval/(1000)
+        if memsuff.lower() in ("gb", "g"):
+            memval = memval
+        if memsuff.lower() in ("tb", "t"):
+            memval = memval*(1000)
 
-    if gpus == 'missing':
+    # rewrite walltime to hours
+    if walltime == 'missing':
         pass
     else:
-        if float(gpus) > k80gpus:
-            msg = 'Max GPU request is %s.' % (k80gpus)
-            errors.append(msg)
+        time = walltime.split(':')
+        units = len(time)
+        if units == 1:
+            wtime = float(time[0])/(60**2)
+        if units == 2:
+            wtime = float(time[0])/(60)+float(time[1])/(60**2)
+        if units == 3:
+            wtime = float(time[0])+float(time[1])/60+float(time[2])/(60**2)
+        if units == 4:
+            wtime = float(time[0])*24+float(time[1])+float(time[2])/60+float(time[3])/(60**2)
 
-accounts = getaccounts()
-if account == 'missing':
-    if len(accounts) == 1:
-        msg = 'PBS account name is required. Using default account "%s".\nAdd an account name to your job script to silence this warning.\nExample: #PBS -A %s.' %s (accounts[0],accounts[0])
-        warning.append(msg)
-    elif len(accounts) > 1:
-        msg = 'PBS account name is required. Multiple accounts available.\nAdd one of your accounts to your job script.\nExample: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
-        for line in accounts:
-            msg = msg + '\n' + line
-        error.append(msg)
-    elif not accounts:
-        msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
-        error.append(msg)
-else:
-    if account not in accounts:
-        msg = 'PBS account name is required. Requested account is not valid.\nAdd one of your accounts to your job script. Example: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
-        for line in accounts:
-            msg = msg + '\n' + line
-        error.append(msg)
-    elif not accounts:
-        msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
-        error.append(msg)
+    # this section is based on queue
+    try:
+        queue
+    except NameError:
+        queue = ""
+    # gpus queue
+    if queue == 'k40_gpu' or queue == 'k80_gpu':
+        msg = 'The k40_gpu and k80_gpu queues have been retired. Please use the PBS option feature.\nExample1: #PBS -l feature=k40. Example2: #PBS -l feature=k80.'
+        errors.append(msg)
+    # no queue 
+    else:
+        if nodes == 'missing':
+            pass
+        else:
+            #maxmem = nodes*stdmem
+            try:
+                nodes = int(nodes)
+                if nodes > gpunodes:
+                    msg = 'Cannot request more than %s node(s) per job.' % (gpunodes)
+                    errors.append(msg)
+            #else:
+            except:
+                nodename = []
+                s = "".join(nodes)
+                nodename.append(s)
+                if len(nodename) > gpunodes:
+                    msg = 'Cannot request more than %s node(s) per job.' % (gpunodes)
+                    errors.append(msg)
+        if ppn == 'missing':
+            pass
+        else:
+            if features == 'k40':
+                if ppn > k40cores:
+                    msg = 'PPN request must be less than or equal to %s for K40 GPU nodes.' % (k40cores)
+                    errors.append(msg)
+            if features == 'k80' or features == 'missing':
+                if ppn > k80cores:
+                    msg = 'PPN request must be less than or equal to %s for K80 GPU nodes.' % (k80cores)
+                    errors.append(msg)
+
+        if walltime == 'missing':
+            pass
+        else:
+            if wtime > gpuwtime:
+                msg = 'Max walltime request is %shrs.' % (gpuwtime)
+                errors.append(msg)
+
+        if mem == 'missing':
+            pass
+        else:
+            if memval > gpumem:
+                msg = 'Max memory request is %sGB.' % (gpumem)
+                errors.append(msg)
+
+        if gpus == 'missing':
+            pass
+        else:
+            if float(gpus) > k80gpus:
+                msg = 'Max GPU request is %s.' % (k80gpus)
+                errors.append(msg)
+
+    accounts = getaccounts()
+    if account == 'missing':
+        if len(accounts) == 1:
+            msg = 'PBS account name is required. Using default account "%s".\nAdd an account name to your job script to silence this warning.\nExample: #PBS -A %s.' %s (accounts[0],accounts[0])
+            warning.append(msg)
+        elif len(accounts) > 1:
+            msg = 'PBS account name is required. Multiple accounts available.\nAdd one of your accounts to your job script.\nExample: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
+            for line in accounts:
+                msg = msg + '\n' + line
+            error.append(msg)
+        elif not accounts:
+            msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
+            error.append(msg)
+    else:
+        if account not in accounts:
+            msg = 'PBS account name is required. Requested account is not valid.\nAdd one of your accounts to your job script. Example: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
+            for line in accounts:
+                msg = msg + '\n' + line
+            error.append(msg)
+        elif not accounts:
+            msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
+            error.append(msg)
 ##### MAIN END #####
 
 # pass the input through
