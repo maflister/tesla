@@ -32,6 +32,7 @@ gpuwtime = 336
 
 # username
 username = pwd.getpwuid(os.geteuid())[0]
+exemptusers = ["akrruser"]
 
 sendmailCommand = "/usr/sbin/sendmail -t"
 
@@ -274,7 +275,7 @@ else:
             queue = m.group(0)
 
 ##### MAIN START #####
-if username == "akrruser":
+if username == exemptusers:
     pass
 else:
     # for each must-have attribute check if exists and exit if not try: jobname except: msg = 'PBS job name is missing. Please consider adding a job name to identify your work.\nExample: #PBS -N JobName.' warnings.append(msg) jobname = 'missing' try: account except: account = 'missing' try: nodes except: msg = 'PBS nodes request is required. Example: #PBS -l nodes=1:ppn=1.' errors.append(msg) nodes = 'missing' try: ppn
