@@ -10,10 +10,18 @@
 
 unhealthy=0
 note=""
+expecteddimms=8
+expectedsize=16384
 if [[ $(hostname -s) =~ ^(kepler05|kepler06|kepler07)$ ]]; then
     expectedcpu="20"
+    expectedgpus="8"
+    expectedtype="K80"
+    expectedspeed=2133
 else
     expectedcpu="16"
+    expectedgpu="3"
+    expectedtype="K40"
+    expectedspeed=1600
 fi
 
 function check_status(){
@@ -31,13 +39,32 @@ function check_status(){
     fi
 }
 
-# Check 2 - Memory
-/rcc/shared/apps/torque/current/sbin/memcheck >& /dev/null
-check_status 0 $? "memory problems"
+# Check 1 - Memory
+dimmcount=$(/usr/sbin/dmidecode -t 17 | /bin/grep 'Configured Clock.*MHz' | /usr/bin/wc | /bin/awk '{print $1}')
+speedcount=$(/usr/sbin/dmidecode -t 17 | /bin/grep 'Configured Clock.*MHz' | /bin/grep $expectedspeed | /usr/bin/wc | /bin/awk '{print $1}')
+sizecount=$(/usr/sbin/dmidecode -t 17 | /bin/grep 'Size.*MB' | /bin/grep $expectedsize | /usr/bin/wc | /bin/awk '{print $1}')
+if [ "$dimmcount" -ne "$expecteddimms" ]; then
+    check_status 0 $? "Memory problems, not the expected DIMM count."
+fi
+if [ "$speedcount" -ne "$expecteddimms" ]; then
+    check_status 0 $? "Memory problems, not the expected speed."
+fi
+if [ "$sizecount" -ne "$expecteddimms" ]; then
+    check_status 0 $? "Memory problems, not the expected size."
+fi
 
-# Check 3 - Check CPUs
+
+# Check 2 - Check CPUs
 cpu_count=$(/bin/grep processor /proc/cpuinfo | /usr/bin/wc -l)
 check_status $expectedcpu $cpu_count "processor count off"
+
+# Check 3 - GPUs
+gpus=$(/usr/bin/nvvs -g | /bin/grep $expectedtype | /usr/bin/wc | /bin/awk '{print $1}')
+if [ "$count" -ne "$expectedgpus" ]; then
+    check_status 0 $? "GPU count off"
+fi
+
+exit $exitstatus
 
 # Check 4 - Check automount
 /etc/init.d/autofs status > /dev/null 2>&1
