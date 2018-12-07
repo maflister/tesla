@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# health-check-k40.sh - checks for Tesla K40 GPU nodes
+# health-check.sh - checks for Tesla GPU nodes
 #
 # This script is called by Torque at job start, job end,
 # and at some interval of the polling interval.
@@ -10,6 +10,11 @@
 
 unhealthy=0
 note=""
+if [[ $(hostname -s) =~ ^(kepler05|kepler06|kepler07)$ ]]; then
+    expectedcpu="20"
+else
+    expectedcpu="16"
+fi
 
 function check_status(){
     # $1 = expected value
@@ -18,37 +23,21 @@ function check_status(){
 
     if [[ "$1" != "$2" ]] ; then
         unhealthy=1
-	if [[ -z $note ]] ; then
+	    if [[ -z $note ]] ; then
             note=$3
-	else
+	    else
             note="$note; $3"
-	fi
+	    fi
     fi
 }
 
-#if [[ -f /etc/sysconfig/pbs_mom ]] ; then
-#    . /etc/sysconfig/pbs_mom
-#fi
-
-# Check 1 - IB cards
-#for card in mlx4_0 mlx4_1 ; do
-#    /usr/bin/ibv_devices | /bin/grep $card >& /dev/null
-#    check_status 0 $? "$card missing"
-#done
-
-## Check 1.5 - IB ports
-#for card in mlx4_0 mlx4_1 ; do
-#    /usr/bin/ibv_devinfo -d $card | /bin/grep PORT_ACTIVE >& /dev/null
-#    check_status 0 $? "$card port not active"
-#done
-
 # Check 2 - Memory
-#/opt/sdsc/sbin/check_mem >& /dev/null
-#check_status 0 $? "memory problems"
+/rcc/shared/apps/torque/current/sbin/memcheck >& /dev/null
+check_status 0 $? "memory problems"
 
 # Check 3 - Check CPUs
 cpu_count=$(/bin/grep processor /proc/cpuinfo | /usr/bin/wc -l)
-check_status 16 $cpu_count "processor count off"
+check_status $expectedcpu $cpu_count "processor count off"
 
 # Check 4 - Check automount
 /etc/init.d/autofs status > /dev/null 2>&1
