@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# health-check-k40.sh - checks for Tesla K40 GPU nodes
+# health-check-k80.sh - checks for Tesla K80 GPU nodes
 #
 # This script is called by Torque at job start, job end,
 # and at some interval of the polling interval.
