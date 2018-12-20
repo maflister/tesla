@@ -19,7 +19,7 @@ if [[ $(hostname -s) =~ ^(kepler05|kepler06|kepler07)$ ]]; then
     expectedspeed=2133
 else
     expectedcpu="16"
-    expectedgpu="3"
+    expectedgpus="3"
     expectedtype="K40"
     expectedspeed=1600
 fi
@@ -60,7 +60,7 @@ check_status $expectedcpu $cpu_count "processor count off"
 
 # Check 3 - GPUs
 gpus=$(/usr/bin/nvvs -g | /bin/grep $expectedtype | /usr/bin/wc | /bin/awk '{print $1}')
-if [ "$count" -ne "$expectedgpus" ]; then
+if [ "$gpus" -ne "$expectedgpus" ]; then
     check_status 0 $? "GPU count off"
 fi
 

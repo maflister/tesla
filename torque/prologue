@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# Tesla prologue, called on the MOM.
+#
+
+PBS_JOBID=$1
+PBS_USER=$2
+PBS_GROUP=$3
+PBS_JOBNAME=$4
+PBS_RESOURCE_LIMITS=$5
+JOB_QUEUE=$6
+JOB_ACCT=$7
+
+TORQUE_HOME=/rcc/shared/apps/torque/var/spool
+this_host=$(/bin/hostname -s)
+pbsnodes_cmd=$(which pbsnodes)
+
+function check_status(){
+    # $1 = expected value
+    # $2 = status
+    # $3 = message if different
+    # Offline node if any checks fail and exit
+
+    if [[ $1 != $2 ]] ; then
+        note=$3
+        $pbsnodes_cmd -oN "$note" $this_host
+        /usr/bin/logger -p local0.alert "Node offlined due to: $note"
+        exit -1
+    fi
+}
+
+if [[ -f /etc/sysconfig/pbs_mom ]] ; then
+    . /etc/sysconfig/pbs_mom
+fi
+
+
+# Create local scratch directory
+if [[ -d "/scratch/local" ]]; then
+  check_status 0 0 "no local scratch"
+else
+ /bin/mkdir -p /scratch/local/$PBS_USER/$PBS_JOBID
+ check_status 0 $? "Cannot create local scratch"
+fi 
+
+# Set local scratch ownership and permissions
+/bin/chmod o+rx /scratch/local/$PBS_USER
+/bin/chown -R $PBS_USER /scratch/local/$PBS_USER/$PBS_JOBID
+
+# Check for node file to see if we're the mother superior
+if [[ -e $TORQUE_HOME/aux/$PBS_JOBID ]] ; then
+    # (Mother Superior) Create global scratch dir
+    /bin/mkdir -p /scratch/global/$PBS_USER/$PBS_JOBID
+    check_status 0 $? "Unable to create global scratch dir"
+
+    # Set global scratch ownership and permissions
+    /bin/chmod o+rx /scratch/global/$PBS_USER
+    /bin/chown -R $PBS_USER.$PBS_GROUP /scratch/global/$PBS_USER/$PBS_JOBID
+fi
+
+other_jobs=$(/bin/find /tmp -maxdepth 1 -name 'PBS_TEMP_*')
+if [[ -z "$other_jobs" ]] ; then
+    # no current jobs, clean up old files
+    /bin/rm -f /tmp/PBS_TEMP_*
+
+    # Set access.conf to default
+    /bin/echo '-:ALL EXCEPT root (wheel) (rccadmins):ALL' > /etc/security/access.conf
+fi
+
+# Create user-job lock file
+/bin/su - $PBS_USER -c "/bin/touch /tmp/PBS_TEMP_$PBS_JOBID"
+
+# Add user to access list
+/bin/sed -i "s/\(EXCEPT.*\):/\1 $PBS_USER:/" /etc/security/access.conf
+
+exit 0

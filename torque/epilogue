@@ -1,0 +1,110 @@
+#!/bin/bash
+#
+# Tesla epilogue, called on MOM
+#
+
+PBS_JOBID=$1
+PBS_USER=$2
+PBS_GROUP=$3
+PBS_JOBNAME=$4
+PBS_SESSION_ID=$5
+PBS_RESOURCE_LIMITS=$6
+PBS_RESOURCES_USED=$7
+JOB_QUEUE=$8
+JOB_ACCT=$9
+JOB_EXIT_CODE=$10
+
+TORQUE_HOME=/rcc/shared/apps/torque/var/spool
+
+this_host=$(/bin/hostname -s)
+
+function check_status(){
+    # $1 = expected value
+    # $2 = status
+    # $3 = message if different
+    # Offline node if any checks fail and exit
+
+    if [[ "$1" != "$2" ]] ; then
+        note=$3
+        /opt/torque/bin/pbsnodes -oN "$note" $this_host
+        /usr/bin/logger -p local0.alert "Node offlined due to: $note"
+        exit -1
+    fi
+}
+
+function user_cleanup(){
+    # Called at end of last job by user to:
+    #  * killall PIDs
+    #  * semaphores
+    #  * shm
+    #  * remove /tmp files
+
+    /usr/bin/killall -9 -u $PBS_USER 
+
+    # kill leftover allocated semiphores
+    for S in $(/usr/bin/ipcs -s | /bin/grep "$PBS_USER" | /bin/awk '{print $2}') ; do
+        /usr/bin/ipcrm -s $S 
+    done
+
+    # kill leftover allocated shared memory
+    for M in $(/usr/bin/ipcs -m | /bin/grep "$PBS_USER" | /bin/grep -v key | /bin/awk '{print $2}') ; do
+        /usr/bin/ipcrm -m $M
+    done
+
+    # Left Over processes that do not kill
+    LO=$(/bin/ps -u $PBS_USER -o "pid=")
+    # wait a little while and check again
+    if [[ -n "$LO" ]] ; then
+        /bin/sleep 10
+    fi
+
+    hung_pids=$(/bin/ps -u $PBS_USER -o "pid=")
+    if [[ -n "$hung_pids" ]] ; then
+        for i in $hung_pids ; do
+            /usr/bin/logger -p local0.alert "Leftover PID $i from PBS_JOBID $PBS_JOBID"
+        done
+        # Force node offline
+        check_status 0 1 "Leftover process from $PBS_JOBID"
+    fi
+
+    # Remove any files the user created in /tmp
+    # Don't remcurse to remove directories, only remove files
+    /bin/find /tmp -user $PBS_USER -type 'f' -print0 | /usr/bin/xargs -0 -r rm -f  
+}
+
+
+if [[ -f /etc/sysconfig/pbs_mom ]] ; then
+    . /etc/sysconfig/pbs_mom
+fi
+
+# Shared use, only remove this job's lock file
+/bin/su - $PBS_USER -c "/bin/rm -f /tmp/PBS_TEMP_$PBS_JOBID"    
+
+# Check for other jobs before cleaning up user activity
+other_jobs=$(/bin/find /tmp -maxdepth 1 -name 'PBS_TEMP_*' -user $PBS_USER)
+if [[ -z "$other_jobs" ]] ; then
+    user_cleanup
+    # Remove user from access.conf
+    # N.B. This only removes the first entry
+    /bin/sed -i "s/$PBS_USER//" /etc/security/access.conf 
+else
+    # Kill process group of job
+    /bin/kill -9 -$PBS_SESSION_ID
+fi
+
+# Remove local per job scratch space
+/bin/rm -rf /scratch/$PBS_USER/$PBS_JOBID
+check_status 0 $? "Cannot remove local scratch space"
+
+# Mother superior removes global scratch dir if empty
+if [[ -e $TORQUE_HOME/aux/$PBS_JOBID ]] ; then
+    /bin/rmdir --ignore-fail-on-non-empty /scratch/global/$PBS_USER/$PBS_JOBID
+    check_status 0 $? "Unable to remove global scratch dir for $PBS_USER/$PBS_JOBID"
+fi
+
+# Clean up /tmp
+# Get rid of all ordinary files in the /tmp directory older than 336h (14 days)
+# and not accessed or modified in the past 168 hours.
+/usr/bin/find /tmp -xdev -atime +15 -mtime +15 -type 'f' -print0 | /usr/bin/xargs -0 -r rm -f
+
+exit 0
