@@ -87,7 +87,7 @@ if len(sys.argv) == 2:
         m = re.search('#PBS\s*\-l\s*\S*mem\=(\w+)', line)
         if (m):
             mem = m.group(1)
-        m = re.search('#PBS\s*\-l\s*\S*walltime\=(\d+\:\d+)+', line)
+        m = re.search('#PBS\s*\-l\s*\S*walltime\=(\d+(:\d+)*)', line)
         if (m):
             walltime = m.group(1)
         # gpus
@@ -120,7 +120,7 @@ elif len(sys.argv) > 2 and os.path.isfile(sys.argv[-1]):
     m = re.search('\-l\s*\S*mem\=(\w+)', line)
     if (m):
         mem = m.group(1)
-    m = re.search('\-l\s*\S*walltime\=(\d+\:\d+)+', line)
+    m = re.search('\-l\s*\S*walltime\=(\d+(:\d+)*)', line)
     if (m):
         walltime = m.group(1)
     # gpus
@@ -183,7 +183,7 @@ elif len(sys.argv) > 2 and os.path.isfile(sys.argv[-1]):
         try:
             walltime
         except:
-            m = re.search('#PBS\s*\-l\s*\S*walltime\=(\d+\:\d+)+', line)
+            m = re.search('#PBS\s*\-l\s*\S*walltime\=(\d+(:\d+)*)', line)
             if (m):
                 walltime = m.group(1)
         # gpus
@@ -233,7 +233,7 @@ else:
             m = re.search('#PBS\s*\-l\s*\S*mem\=(\w+)', line)
             if (m):
                 mem = m.group(1)
-            m = re.search('#PBS\s*\-l\s*\S*walltime\=(\d+\:\d+)+', line)
+            m = re.search('#PBS\s*\-l\s*\S*walltime\=(\d+(:\d+)*)', line)
             if (m):
                 walltime = m.group(1)
             m = re.search('#PBS\s*\-l\s*\S*gpus\=(\d+)', line)
@@ -261,7 +261,7 @@ else:
         m = re.search('\-l\s*\S*mem\=(\w+)', line)
         if (m):
             mem = m.group(1)
-        m = re.search('\-l\s*\S*walltime\=(\d+\:\d+)+', line)
+        m = re.search('\-l\s*\S*walltime\=(\d+(:\d+)*)', line)
         if (m):
             walltime = m.group(1)
         m = re.search('\-l\s*\S*gpus\=(\d+)', line)
@@ -275,7 +275,7 @@ else:
             queue = m.group(0)
 
 ##### MAIN START #####
-if username == exemptusers:
+if username in exemptusers:
     pass
 else:
     # for each must-have attribute check if exists and exit if not try: jobname except: msg = 'PBS job name is missing. Please consider adding a job name to identify your work.\nExample: #PBS -N JobName.' warnings.append(msg) jobname = 'missing' try: account except: account = 'missing' try: nodes except: msg = 'PBS nodes request is required. Example: #PBS -l nodes=1:ppn=1.' errors.append(msg) nodes = 'missing' try: ppn
@@ -400,28 +400,28 @@ else:
                 msg = 'Max GPU request is %s.' % (k80gpus)
                 errors.append(msg)
 
-    accounts = getaccounts()
-    if account == 'missing':
-        if len(accounts) == 1:
-            msg = 'PBS account name is required. Using default account "%s".\nAdd an account name to your job script to silence this warning.\nExample: #PBS -A %s.' %s (accounts[0],accounts[0])
-            warning.append(msg)
-        elif len(accounts) > 1:
-            msg = 'PBS account name is required. Multiple accounts available.\nAdd one of your accounts to your job script.\nExample: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
-            for line in accounts:
-                msg = msg + '\n' + line
-            error.append(msg)
-        elif not accounts:
-            msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
-            error.append(msg)
-    else:
-        if account not in accounts:
-            msg = 'PBS account name is required. Requested account is not valid.\nAdd one of your accounts to your job script. Example: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
-            for line in accounts:
-                msg = msg + '\n' + line
-            error.append(msg)
-        elif not accounts:
-            msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
-            error.append(msg)
+    #accounts = getaccounts()
+    #if account == 'missing':
+    #    if len(accounts) == 1:
+    #        msg = 'PBS account name is required. Using default account "%s".\nAdd an account name to your job script to silence this warning.\nExample: #PBS -A %s.' %s (accounts[0],accounts[0])
+    #        warning.append(msg)
+    #    elif len(accounts) > 1:
+    #        msg = 'PBS account name is required. Multiple accounts available.\nAdd one of your accounts to your job script.\nExample: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
+    #        for line in accounts:
+    #            msg = msg + '\n' + line
+    #        error.append(msg)
+    #    elif not accounts:
+    #        msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
+    #        error.append(msg)
+    #else:
+    #    if account not in accounts:
+    #        msg = 'PBS account name is required. Requested account is not valid.\nAdd one of your accounts to your job script. Example: #PBS -A %s.\nAvailable accounts:' %s (accounts[0])
+    #        for line in accounts:
+    #            msg = msg + '\n' + line
+    #        error.append(msg)
+    #    elif not accounts:
+    #        msg = 'PBS account name is required. No valid account name for your user. Contact rcc_admin@mcw.edu.'
+    #        error.append(msg)
 ##### MAIN END #####
 
 # pass the input through
