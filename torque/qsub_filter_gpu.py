@@ -55,13 +55,18 @@ errors = []
 warnings = []
 
 # grab lines from stdin
-line1 = sys.stdin.readline()
 lines = sys.stdin.readlines()
+line1 = lines[0]
+lineN = lines[1:]
 
 if len(sys.argv) == 2:
+    shebang = "yes"
     if "#!" not in line1:
         msg = 'First line should include shabang (#!). Example: #!/bin/sh or #!/bin/bash, etc.'
         errors.append(msg)
+        shebang = "no"
+    if shebang == "yes":
+        lines = lineN
     pbs = "no"
     for line in lines:
         if pbs == "no":
@@ -136,11 +141,14 @@ elif len(sys.argv) > 2 and os.path.isfile(sys.argv[-1]):
         queue = m.group(0)
 
     # deal with script
+    shebang = "yes"
     if "#!" not in line1:
         msg = 'First line should include shabang (#!). Example: #!/bin/sh or #!/bin/bash, etc.'
         errors.append(msg)
+        shebang = "no"
+    if shebang == "yes":
+        lines = lineN
     pbs = "no"
-    #for line in sys.stdin.readlines():
     for line in lines:
         if not line.strip(): # skip blank lines between shabang and first #PBS line
             continue
@@ -425,7 +433,6 @@ else:
 ##### MAIN END #####
 
 # pass the input through
-sys.stdout.write(line1)
 for line in lines:
     sys.stdout.write(line)
 
@@ -465,7 +472,6 @@ if errors or warnings:
         m.write('\n----------------------------------------------------------------------------------\n')
     sys.stderr.write('\nFor more information please see http://wiki.rcc.mcw.edu/Torque_Submission_Scripts\nand http://wiki.rcc.mcw.edu/Tesla_GPU_Cluster.\n----------------------------------------------------------------------------------\n')
     m.write('Torque job script:\n')
-    m.write(line1)
     for line in lines:
 	m.write(line)
     m.write('\n----------------------------------------------------------------------------------\n')
