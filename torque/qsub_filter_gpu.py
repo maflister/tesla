@@ -32,7 +32,8 @@ gpuwtime = 336
 
 # username
 username = pwd.getpwuid(os.geteuid())[0]
-exemptusers = ["akrruser"]
+exemptUsers = ["akrruser"]
+exemptJobs = ["matlab"]
 
 sendmailCommand = "/usr/sbin/sendmail -t"
 
@@ -63,6 +64,17 @@ def checkPBS(lines):
             break
     return pbs
 
+def getCommands(lines):
+    commands = []
+    for line in lines:
+        if "#PBS" in line or "#!" in line or "#" in line:
+            continue
+        elif not line.strip():
+            continue
+        else:
+            commands.append(line)
+    return commands
+
 errors = []
 warnings = []
 
@@ -89,7 +101,7 @@ if len(sys.argv) == 2:
                 if isinstance(m, (int, long)):
                     nodes = m.group(1)
                 else:
-                    # if node name set to 1
+                    # if node name, then set to 1
                     nodes = 1
             m = re.search('#PBS\s*\-l\s*\S*ppn\=(\d+)', line)
             if (m):
@@ -109,6 +121,15 @@ if len(sys.argv) == 2:
             m = re.search('(?<=#PBS -q )(\w+)', line)
             if (m):
                 queue = m.group(0)
+            m = re.search('#PBS\s*\-l\s*\S*software\=(\w+)\:(\d+)', line)
+            if (m):
+                software = m.group(1)
+                licCount = m.group(2)
+            # check for module load
+            m = re.search('(?<=module load )(\w+)\/(\S+)', line)
+            if (m):
+                app = m.group(1)
+                version = m.group(2)
 
 else:
     # get qsub command line
@@ -117,7 +138,8 @@ else:
         m = re.search('\-N\s*(\w+)', line)
         if (m):
             jobname = m[-1]
-        m = re.search('(\-A\s*(\w+)', line)
+            #jobname = m.group(1)
+        m = re.search('\-A\s*(\w+)', line)
         if (m):
             account = m.group(1)
         m = re.search('\-l\s*\S*nodes\=(\w+)', line)
@@ -145,7 +167,11 @@ else:
             queue = m.group(1)
         m = re.search('\-I', line)
         if (m):
-            interactive = m.group(0)
+            interactive = True
+        m = re.search('\-l\s*\S*software\=(\w+)\:(\d+)', line)
+        if (m):
+            software = m.group(1)
+            licCount = m.group(2)
 
     # deal with script
     if pbs:
@@ -213,6 +239,20 @@ else:
                 m = re.search('(?<=#PBS -q )(\w+)', line)
                 if (m):
                     queue = m.group(0)
+            try:
+                software
+            except:
+                m = re.search('#PBS\s*\-l\s*\S*software\=(\w+)\:(\d+)', line)
+                if (m):
+                    software = m.group(1)
+                    licCount = m.group(2)
+            try:
+                app
+            except:
+                m = re.search('(?<=module load )(\w+)\/(\S+)', line)
+                if (m):
+                    app = m.group(1)
+                    version = m.group(2)
 
 ##### MAIN START #####
 # for each must-have attribute check if exists and exit if not 
@@ -260,6 +300,19 @@ try:
     features
 except:
     features = 'missing'
+try:
+    software
+except:
+    software = 'missing'
+try:
+    interactive
+except:
+    interactive = False
+
+try:
+    app
+except:
+    app = False
 
 # rewrite memory to gb
 if mem == 'missing':
@@ -308,7 +361,7 @@ else:
     if nodes == 'missing':
         pass
     else:
-        maxmem = nodes*stdmem
+        maxmem = nodes*gpumem
         nodes = int(nodes)
         if nodes > gpunodes:
             msg = 'Cannot request more than %s node(s) per job.' % (gpunodes)
@@ -374,18 +427,16 @@ else:
 # module load matlab/2019b
 # /path/to/matlab -nodisplay -nosplash myscript.m
 groups = getgroups(username)
-groupMember = True
-if "matlab_users" not in groups:
-    groupMember = False
 licMatlab = False
+if software == "matlab" and licCount != 0:
+    licMatlab = True
 matlab = False
 for line in lines:
-    if "software=matlab" in line:
-        licMatlab = True
-    if "PBS" not in line and "matlab " in line:
+    if "matlab " in line:
+        print 'test'
         matlab = True
 if licMatlab or matlab:
-    if not groupMember:
+    if "matlab_users" not in groups:
         msg = 'You are not authorized to use MATLAB on this cluster. Please contact rcc_admin@mcw.edu'
         errors.append(msg)
     elif not licMatlab:
@@ -394,6 +445,14 @@ if licMatlab or matlab:
     elif not matlab:
         msg = 'You have specified a MATLAB license but are not running MATLAB in your job.'
         errors.append(msg)
+
+# Check for module load and filter for apps with special reqs
+if app:
+    if app == "pytorch" and version >= '1.3.1':
+        if not features or features != "k80":
+            msg = 'Pytorch >= 1.3.1 requires a K80 GPU. Add "#PBS -l feature=k80" to the #PBS header of your script.'
+            errors.append(msg)
+
 ##### MAIN END #####
 
 # pass the input through
@@ -418,37 +477,37 @@ else:
 # prints errors for users
 if errors or warnings:
     numerr = str(len(errors))
-    m = os.popen(sendmailCommand, "w")
-    m.write("To: Matt Flister <maflister@mcw.edu>\n")
-    m.write("From: <no-reply@rcc.mcw.edu>\n")
-    m.write("Subject: Job Blocked by Torque Submit Filter\n")
-    m.write('\nUser: ' + os.getlogin() + '\n')
-    m.write('Submit Host: ' + os.uname()[1] + '\n')
-    m.write('\nSubmit script has '+numerr+' error(s). Please see below.\n----------------------------------------------------------------------------------\n')
+    #m = os.popen(sendmailCommand, "w")
+    #m.write("To: Matt Flister <maflister@mcw.edu>\n")
+    #m.write("From: <no-reply@rcc.mcw.edu>\n")
+    #m.write("Subject: Job Blocked by Torque Submit Filter\n")
+    #m.write('\nUser: ' + os.getlogin() + '\n')
+    #m.write('Submit Host: ' + os.uname()[1] + '\n')
+    #m.write('\nSubmit script has '+numerr+' error(s). Please see below.\n----------------------------------------------------------------------------------\n')
     if errors:
         sys.stderr.write('\nYour job submission script has '+numerr+' error(s). Please see below.\n----------------------------------------------------------------------------------\n')
-        m.write('Errors:\n----------------------------------------------------------------------------------\n')
+    #    m.write('Errors:\n----------------------------------------------------------------------------------\n')
     for error in errors:
         sys.stderr.write(error)
         sys.stderr.write('\n----------------------------------------------------------------------------------\n')
-        m.write(error)
-        m.write('\n----------------------------------------------------------------------------------\n')
+    #    m.write(error)
+    #    m.write('\n----------------------------------------------------------------------------------\n')
     if warnings:
 	if int(numwarn) == 1:
             sys.stderr.write('\nYour job submission script has '+numwarn+' advisory. Please see below.\n----------------------------------------------------------------------------------\n')
 	else:
             sys.stderr.write('\nYour job submission script has '+numwarn+' advisories. Please see below.\n----------------------------------------------------------------------------------\n')
-        m.write('Advisory:\n')
+    #    m.write('Advisory:\n')
     for warning in warnings:
 	sys.stderr.write(warning)
         sys.stderr.write('\n----------------------------------------------------------------------------------\n')
-	m.write(warning)
-        m.write('\n----------------------------------------------------------------------------------\n')
+#	m.write(warning)
+#        m.write('\n----------------------------------------------------------------------------------\n')
     sys.stderr.write('\nFor more information please see http://wiki.rcc.mcw.edu/Torque_Submission_Scripts\nand http://wiki.rcc.mcw.edu/Tesla_GPU_Cluster.\n----------------------------------------------------------------------------------\n')
-    m.write('Torque job script:\n')
-    for line in lines:
-	m.write(line)
-    m.write('\n----------------------------------------------------------------------------------\n')
-    m.close()
+#    m.write('Torque job script:\n')
+#    for line in lines:
+#	m.write(line)
+#    m.write('\n----------------------------------------------------------------------------------\n')
+#    m.close()
     if errors:
         sys.exit(-1)
