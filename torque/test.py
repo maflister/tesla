@@ -494,37 +494,37 @@ else:
 # prints errors for users
 if errors or warnings:
     numerr = str(len(errors))
-    m = os.popen(sendmailCommand, "w")
-    m.write("To: Matt Flister <maflister@mcw.edu>\n")
-    m.write("From: <no-reply@rcc.mcw.edu>\n")
-    m.write("Subject: Job Blocked by Torque Submit Filter\n")
-    m.write('\nUser: ' + os.getlogin() + '\n')
-    m.write('Submit Host: ' + os.uname()[1] + '\n')
-    m.write('\nSubmit script has '+numerr+' error(s). Please see below.\n----------------------------------------------------------------------------------\n')
+    #m = os.popen(sendmailCommand, "w")
+    #m.write("To: Matt Flister <maflister@mcw.edu>\n")
+    #m.write("From: <no-reply@rcc.mcw.edu>\n")
+    #m.write("Subject: Job Blocked by Torque Submit Filter\n")
+    #m.write('\nUser: ' + os.getlogin() + '\n')
+    #m.write('Submit Host: ' + os.uname()[1] + '\n')
+    #m.write('\nSubmit script has '+numerr+' error(s). Please see below.\n----------------------------------------------------------------------------------\n')
     if errors:
         sys.stderr.write('\nYour job submission script has '+numerr+' error(s). Please see below.\n----------------------------------------------------------------------------------\n')
-        m.write('Errors:\n----------------------------------------------------------------------------------\n')
+    #    m.write('Errors:\n----------------------------------------------------------------------------------\n')
     for error in errors:
         sys.stderr.write(error)
         sys.stderr.write('\n----------------------------------------------------------------------------------\n')
-        m.write(error)
-        m.write('\n----------------------------------------------------------------------------------\n')
+    #    m.write(error)
+    #    m.write('\n----------------------------------------------------------------------------------\n')
     if warnings:
 	if int(numwarn) == 1:
             sys.stderr.write('\nYour job submission script has '+numwarn+' advisory. Please see below.\n----------------------------------------------------------------------------------\n')
 	else:
             sys.stderr.write('\nYour job submission script has '+numwarn+' advisories. Please see below.\n----------------------------------------------------------------------------------\n')
-        m.write('Advisory:\n')
+    #    m.write('Advisory:\n')
     for warning in warnings:
 	sys.stderr.write(warning)
         sys.stderr.write('\n----------------------------------------------------------------------------------\n')
-	m.write(warning)
-        m.write('\n----------------------------------------------------------------------------------\n')
+#	m.write(warning)
+#        m.write('\n----------------------------------------------------------------------------------\n')
     sys.stderr.write('\nFor more information please see http://wiki.rcc.mcw.edu/Torque_Submission_Scripts\nand http://wiki.rcc.mcw.edu/Tesla_GPU_Cluster.\n----------------------------------------------------------------------------------\n')
-    m.write('Torque job script:\n')
-    for line in lines:
-	m.write(line)
-    m.write('\n----------------------------------------------------------------------------------\n')
-    m.close()
+#    m.write('Torque job script:\n')
+#    for line in lines:
+#	m.write(line)
+#    m.write('\n----------------------------------------------------------------------------------\n')
+#    m.close()
     if errors:
         sys.exit(-1)
